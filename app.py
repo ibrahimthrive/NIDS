@@ -601,7 +601,7 @@ with tab_about:
 
     This final-year project develops an intelligent NIDS that detects and classifies
     network intrusions using machine learning and deep learning.
-git remote add origin https://github.com/everthingdeen/NIDS.git
+git remote add origin https://github.com/ibrahimthrive/NIDS.git
     ---
 
     ## Dataset: NSL-KDD
