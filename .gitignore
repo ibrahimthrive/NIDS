@@ -1,0 +1,42 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+nids_env/
+venv/
+ENV/
+env/
+.venv/
+.python-version
+
+# IDE / editor files
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# Build and log files
+*.log
+*.tmp
+*.bak
+*.orig
+
+# Generated artifacts and model outputs
+artifacts/
+plots/
+*.keras
+*.h5
+*.pkl
+*.npz
+*.npy
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
