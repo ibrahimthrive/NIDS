@@ -2,6 +2,8 @@
 ### Design and Implementation Using Random Forest and Deep Learning
 **Dataset:** NSL-KDD | **Models:** Random Forest + LSTM | **Deployment:** Streamlit
 
+🌐 **Live demo:** [netids.streamlit.app](https://netids.streamlit.app)
+
 ---
 
 ## 📁 Project Structure
@@ -133,14 +135,18 @@ The app will open at **http://localhost:8501** and provides:
 
 ---
 
-## 📊 Expected Results (NSL-KDD Benchmarks)
+## 📊 Results (NSL-KDD Test Set)
 
-| Model | Accuracy | F1-Score (weighted) |
-|-------|----------|---------------------|
-| Random Forest | ~99.2% | ~99.1% |
-| LSTM | ~98.5% | ~98.4% |
+| Model | Accuracy | Precision (weighted) | Recall (weighted) | F1-Score (weighted) |
+|-------|----------|-----------------------|--------------------|----------------------|
+| Random Forest | 75.6% | 78.9% | 75.6% | 70.8% |
+| LSTM | 76.3% | 79.4% | 76.3% | 73.1% |
 
-> Results may vary slightly depending on random seeds and hardware.
+> Scores are on **KDDTest+**, which deliberately includes attack types absent
+> from training (NSL-KDD's known difficulty). Both models still struggle on
+> the rarest class, U2R (F1 well under 0.20) — see `plots/` for the full
+> per-class breakdown. Results will vary with random seeds, hardware, and the
+> RF search space in `train_random_forest.py`.
 
 ---
 
@@ -180,15 +186,14 @@ Input (1, 40)
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| pandas | 2.1.4 | Data manipulation |
-| numpy | 1.26.4 | Numerical computing |
-| scikit-learn | 1.4.0 | RF, metrics, preprocessing |
-| tensorflow | 2.15.0 | LSTM deep learning |
-| matplotlib | 3.8.2 | Evaluation plots |
+| pandas | 3.0.3 | Data manipulation |
+| numpy | 2.4.6 | Numerical computing |
+| scikit-learn | 1.9.0 | RF, metrics, preprocessing |
+| tensorflow | 2.21.0 | LSTM deep learning |
+| matplotlib | 3.11.0 | Evaluation plots |
 | seaborn | 0.13.2 | Heatmaps |
-| joblib | 1.3.2 | Model serialisation |
-| streamlit | 1.31.0 | Web deployment |
-| plotly | 5.18.0 | Interactive charts |
-# NIDS
-# NIDS
-# NIDS
+| joblib | 1.5.3 | Model serialisation |
+| streamlit | 1.58.0 | Web deployment |
+| plotly | 6.8.0 | Interactive charts |
+| Pillow | 12.2.0 | Image handling in the Streamlit app |
+| imbalanced-learn | 0.12.0 | SMOTE oversampling (LSTM pipeline) |
