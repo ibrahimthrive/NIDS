@@ -117,8 +117,8 @@ def build_search(y_train):
     strong_weight = make_strong_class_weight(y_train)
 
     param_grid = {
-        "n_estimators": [500, 800, 1200],
-        "max_depth": [None, 25, 40, 60, 90],
+        "n_estimators": [200, 400, 600],
+        "max_depth": [20, 30, 40],
         "min_samples_split": [2, 4, 8, 12],
         "min_samples_leaf": [1, 2, 4],
         "max_features": ["sqrt", "log2", 0.35, 0.5],
@@ -136,17 +136,18 @@ def build_search(y_train):
         "weighted_f1": make_scorer(f1_score, average="weighted", zero_division=0),
     }
 
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
+    cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=RANDOM_STATE)
     base_model = RandomForestClassifier(
         random_state=RANDOM_STATE,
-        n_jobs=-1,
+        n_jobs=1,   # outer RandomizedSearchCV already parallelizes across candidates/folds;
+                    # n_jobs=-1 here too would oversubscribe the same cores
         verbose=0,
     )
 
     return RandomizedSearchCV(
         estimator=base_model,
         param_distributions=param_grid,
-        n_iter=45,
+        n_iter=15,
         scoring=scoring,
         refit="macro_f1",
         cv=cv,

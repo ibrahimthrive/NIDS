@@ -7,6 +7,7 @@ Run this single script to train and evaluate both models end-to-end.
 """
 
 import os
+import sys
 import time
 import argparse
 from preprocessing      import run_preprocessing
@@ -17,10 +18,10 @@ from compare_models      import run_comparison
 
 def print_banner():
     print("""
-╔══════════════════════════════════════════════════════════════╗
-║   Network Intrusion Detection System (NIDS)                  ║
-║   Random Forest + LSTM  |  NSL-KDD Dataset                   ║
-╚══════════════════════════════════════════════════════════════╝
++--------------------------------------------------------------+
+|   Network Intrusion Detection System (NIDS)                  |
+|   Random Forest + LSTM  |  NSL-KDD Dataset                   |
++--------------------------------------------------------------+
 """)
 
 

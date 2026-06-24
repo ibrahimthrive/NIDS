@@ -26,7 +26,6 @@ env/
 
 # Generated artifacts and model outputs
 artifacts/
-plots/
 *.keras
 *.h5
 *.pkl
