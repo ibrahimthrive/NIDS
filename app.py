@@ -67,9 +67,8 @@ h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3{
 @keyframes shimmer{ 0%{background-position:-400px 0;} 100%{background-position:400px 0;} }
 @keyframes floatIcon{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);} }
 
-.main .block-container{ animation:fadeInUp .45s ease both; }
-[data-testid="stMainBlockContainer"]{ padding-top:1.25rem !important; }
-[data-testid="stHeader"]{ height:2.75rem !important; min-height:2.75rem !important; }
+.main .block-container{ animation:fadeInUp .45s ease both; padding-top:.4rem; }
+[data-testid="stHeader"]{ height:2.6rem; }
 
 /* ── app background ──────────────────────────────────────────────────── */
 [data-testid="stAppViewContainer"] > .main{
