@@ -25,7 +25,8 @@ nids_project/
 │   ├── random_forest_model.pkl
 │   └── lstm_model/
 │       ├── lstm_final.keras
-│       └── best_lstm.keras
+│       ├── best_val_acc.keras
+│       └── best_minority_f1.keras
 │
 ├── plots/                       ← Auto-created: evaluation plots
 │   ├── rf_confusion_matrix.png
@@ -153,20 +154,25 @@ The app will open at **http://localhost:8501** and provides:
 ## 🧠 Model Architecture
 
 ### Random Forest
-- 200 trees, `max_features='sqrt'`, `class_weight='balanced'`
-- Feature importance used for top-40 feature selection
+- `RandomizedSearchCV` over n_estimators, max_depth, max_features, class_weight, criterion (`train_random_forest.py`)
+- Optimised for macro-F1 (not just weighted) so the rare classes matter; minority classes are oversampled before the search
+- A separate lightweight Random Forest ranks feature importance for top-40 feature selection in `preprocessing.py`
 
-### LSTM
+### LSTM (BiLSTM v2 — Imbalance-Aware)
 ```
 Input (1, 40)
-  → LSTM(128, return_sequences=True) → BatchNorm → Dropout(0.3)
-  → LSTM(64)                         → BatchNorm → Dropout(0.3)
-  → Dense(64, relu)                  → Dropout(0.15)
+  → BiLSTM(256, return_sequences=True) → LayerNorm → Dropout(0.4)
+  → BiLSTM(128, return_sequences=True) → LayerNorm → Dropout(0.4)
+  → LSTM(64)                           → LayerNorm → Dropout(0.4)
+  → Dense(128, swish) → BatchNorm → Dropout(0.2)
+  → Dense(64, swish)  → BatchNorm → Dropout(0.2)
   → Dense(5, softmax)
 ```
-- Optimizer: Adam (lr=0.001)
-- Loss: Categorical Crossentropy
-- Callbacks: EarlyStopping (patience=7), ReduceLROnPlateau, ModelCheckpoint
+- Optimizer: Adam (lr=0.001, clipnorm=1.0)
+- Loss: Focal Loss (gamma=2.5, alpha=0.25) with label smoothing (0.05)
+- LR schedule: cosine annealing with warm restarts (T₀=20 epochs)
+- Oversampling: SMOTETomek upsamples R2L → 8,000 and U2R → 2,000 samples before training
+- Callbacks: EarlyStopping (patience=15), ModelCheckpoint (best val-accuracy), and a custom callback that saves the checkpoint with the best minority-class (R2L/U2R) F1
 
 ---
 

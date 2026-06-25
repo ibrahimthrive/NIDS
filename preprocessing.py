@@ -74,7 +74,7 @@ def map_attack_labels(df: pd.DataFrame) -> pd.DataFrame:
     unknown = df["label"].isna().sum()
     if unknown > 0:
         print(f"   ⚠  {unknown} unknown labels set to 'Normal'")
-        df["label"].fillna("Normal", inplace=True)
+        df["label"] = df["label"].fillna("Normal")
     return df
 
 
