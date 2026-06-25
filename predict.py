@@ -9,6 +9,7 @@ Handles three upload formats automatically:
 """
 
 import os
+import sys
 import numpy as np
 import pandas as pd
 import joblib
@@ -16,6 +17,13 @@ import tensorflow as tf
 from preprocessing import COLUMNS, CATEGORICAL_COLS, ATTACK_MAP, CLASS_NAMES
 # Register FocalLoss before any load_model call
 from train_lstm import FocalLoss  # noqa: F401
+
+# Windows consoles default to a non-UTF-8 codepage (e.g. cp1252), which raises
+# UnicodeEncodeError on the emoji in the print() calls below and silently
+# breaks model loading. Force UTF-8 stdout/stderr so this never crashes.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
 
 ARTIFACTS_DIR  = "artifacts"
 RF_MODEL_PATH  = os.path.join(ARTIFACTS_DIR, "random_forest_model.pkl")

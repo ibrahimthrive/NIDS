@@ -12,6 +12,7 @@ Tabs:
 """
 
 import os
+import sys
 import io
 import json
 import numpy as np
@@ -21,6 +22,14 @@ import plotly.graph_objects as go
 import plotly.express as px
 from PIL import Image
 
+# Windows consoles default to a non-UTF-8 codepage, which raises
+# UnicodeEncodeError on any emoji printed to stdout/stderr (this process and
+# everything it imports, e.g. predict.py's loading messages). Force UTF-8 so
+# a console print can never crash model loading.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 # ─── Page Config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="NIDS — Intrusion Detection System",
@@ -28,6 +37,177 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# ─── Global Theme / CSS ────────────────────────────────────────────────────────
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+:root{
+    --accent:#6366f1;
+    --accent2:#22d3ee;
+    --ink:#0f172a;
+    --muted:#64748b;
+    --card-radius:14px;
+    --shadow-sm:0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.08);
+    --shadow-md:0 10px 28px -8px rgba(15,23,42,.18);
+    --shadow-lg:0 20px 45px -12px rgba(99,102,241,.35);
+}
+
+html, body, [class*="css"]{ font-family:'Inter', sans-serif; }
+h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3{
+    font-family:'Poppins', sans-serif !important;
+    font-weight:700 !important;
+    letter-spacing:-0.01em;
+}
+
+/* ── animated entrance ───────────────────────────────────────────────── */
+@keyframes fadeInUp{ from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);} }
+@keyframes pulseGlow{ 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.35);} 50%{box-shadow:0 0 0 10px rgba(239,68,68,0);} }
+@keyframes shimmer{ 0%{background-position:-400px 0;} 100%{background-position:400px 0;} }
+@keyframes floatIcon{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);} }
+
+.main .block-container{ animation:fadeInUp .45s ease both; padding-top:1.6rem; }
+
+/* ── app background ──────────────────────────────────────────────────── */
+[data-testid="stAppViewContainer"] > .main{
+    background:radial-gradient(circle at 0% 0%, #eef2ff 0%, #ffffff 28%) ;
+}
+
+/* ── sidebar ──────────────────────────────────────────────────────────── */
+[data-testid="stSidebar"]{
+    background:linear-gradient(195deg, #0f172a 0%, #1e1b4b 55%, #312e81 100%);
+}
+[data-testid="stSidebar"] *{ color:#e2e8f0 !important; }
+[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] > div{
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:10px;
+    color:#fff !important;
+}
+[data-testid="stSidebar"] hr{ border-color:rgba(255,255,255,.15); }
+
+/* ── buttons ──────────────────────────────────────────────────────────── */
+.stButton button, .stFormSubmitButton button, [data-testid="stDownloadButton"] button{
+    border-radius:10px !important;
+    font-weight:600 !important;
+    border:none !important;
+    transition:transform .15s ease, box-shadow .25s ease !important;
+    box-shadow:var(--shadow-sm);
+}
+.stButton button:hover, .stFormSubmitButton button:hover, [data-testid="stDownloadButton"] button:hover{
+    transform:translateY(-2px);
+    box-shadow:var(--shadow-md);
+}
+.stFormSubmitButton button[kind="primary"]{
+    background:linear-gradient(135deg, var(--accent), #8b5cf6) !important;
+}
+
+/* ── tabs ─────────────────────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"]{
+    gap:6px;
+    background:#f1f5f9;
+    padding:6px;
+    border-radius:12px;
+}
+.stTabs [data-baseweb="tab"]{
+    border-radius:9px !important;
+    font-weight:600;
+    color:var(--muted);
+    transition:all .2s ease;
+}
+.stTabs [data-baseweb="tab"]:hover{ background:rgba(99,102,241,.08); color:var(--accent); }
+.stTabs [aria-selected="true"]{
+    background:#fff !important;
+    color:var(--accent) !important;
+    box-shadow:var(--shadow-sm);
+}
+
+/* ── metrics ──────────────────────────────────────────────────────────── */
+[data-testid="stMetric"]{
+    background:#fff;
+    border:1px solid #eef0f4;
+    border-radius:var(--card-radius);
+    padding:14px 16px;
+    box-shadow:var(--shadow-sm);
+    transition:transform .2s ease, box-shadow .2s ease;
+}
+[data-testid="stMetric"]:hover{ transform:translateY(-3px); box-shadow:var(--shadow-md); }
+[data-testid="stMetricValue"]{ font-family:'Poppins',sans-serif; font-weight:700; color:var(--ink); }
+
+/* ── generic interactive card (used for our own HTML cards) ─────────────── */
+.fine-card{
+    border-radius:var(--card-radius);
+    transition:transform .22s ease, box-shadow .22s ease;
+    animation:fadeInUp .5s ease both;
+}
+.fine-card:hover{ transform:translateY(-4px) scale(1.012); box-shadow:var(--shadow-md); }
+
+/* ── forms / inputs ───────────────────────────────────────────────────── */
+[data-testid="stForm"]{
+    background:#fff;
+    border:1px solid #eef0f4;
+    border-radius:18px;
+    padding:1.6rem 1.6rem .6rem;
+    box-shadow:var(--shadow-sm);
+}
+.stTextInput input, .stNumberInput input, div[data-baseweb="select"] > div{
+    border-radius:9px !important;
+    transition:box-shadow .2s ease, border-color .2s ease !important;
+}
+.stTextInput input:focus, .stNumberInput input:focus{
+    box-shadow:0 0 0 3px rgba(99,102,241,.18) !important;
+    border-color:var(--accent) !important;
+}
+.stSlider [data-baseweb="slider"] > div > div{ background:var(--accent) !important; }
+
+/* ── file uploader ────────────────────────────────────────────────────── */
+[data-testid="stFileUploaderDropzone"]{
+    border-radius:14px !important;
+    border:2px dashed #c7d2fe !important;
+    background:#f8fafc !important;
+    transition:border-color .2s ease, background .2s ease;
+}
+[data-testid="stFileUploaderDropzone"]:hover{
+    border-color:var(--accent) !important;
+    background:#eef2ff !important;
+}
+
+/* ── expander ─────────────────────────────────────────────────────────── */
+[data-testid="stExpander"]{
+    border-radius:14px !important;
+    border:1px solid #eef0f4 !important;
+    box-shadow:var(--shadow-sm);
+}
+
+/* ── images (plots) ───────────────────────────────────────────────────── */
+[data-testid="stImage"] img{
+    border-radius:12px;
+    box-shadow:var(--shadow-sm);
+    transition:transform .25s ease, box-shadow .25s ease;
+}
+[data-testid="stImage"] img:hover{ transform:scale(1.012); box-shadow:var(--shadow-md); }
+
+/* ── dataframes ───────────────────────────────────────────────────────── */
+[data-testid="stDataFrame"]{ border-radius:12px; overflow:hidden; box-shadow:var(--shadow-sm); }
+
+/* ── markdown tables (About tab) ──────────────────────────────────────── */
+.stMarkdown table{ border-collapse:separate; border-spacing:0; border-radius:12px; overflow:hidden; box-shadow:var(--shadow-sm); }
+.stMarkdown table thead tr{ background:linear-gradient(135deg, var(--accent), #8b5cf6); }
+.stMarkdown table thead th{ color:#fff !important; }
+.stMarkdown table tbody tr:nth-child(even){ background:#f8fafc; }
+.stMarkdown table tbody tr:hover{ background:#eef2ff; }
+
+/* ── alerts ───────────────────────────────────────────────────────────── */
+[data-testid="stAlert"]{ border-radius:12px; box-shadow:var(--shadow-sm); }
+
+/* ── scrollbar ────────────────────────────────────────────────────────── */
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{ background:#c7d2fe; border-radius:8px; }
+::-webkit-scrollbar-thumb:hover{ background:var(--accent); }
+</style>
+""", unsafe_allow_html=True)
 
 # ─── Constants ────────────────────────────────────────────────────────────────
 CLASS_NAMES   = ["Normal", "DoS", "Probe", "R2L", "U2R"]
@@ -93,14 +273,19 @@ def load_plot(filename):
 
 # ─── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.image("https://img.icons8.com/fluency/96/firewall.png", width=80)
-    st.title("🛡️ NIDS Dashboard")
-    st.markdown("**Network Intrusion Detection System**")
-    st.markdown("*Random Forest + LSTM | NSL-KDD*")
+    st.markdown("""
+    <div style='text-align:center;padding:6px 0 14px;'>
+        <div style='font-size:46px;animation:floatIcon 3s ease-in-out infinite;'>🛡️</div>
+        <div style='font-family:Poppins,sans-serif;font-weight:700;font-size:22px;
+                    color:#fff;margin-top:2px;'>NIDS Dashboard</div>
+        <div style='font-size:13px;color:#a5b4fc;margin-top:2px;'>Network Intrusion Detection System</div>
+        <div style='font-size:12px;color:#818cf8;font-style:italic;'>Random Forest + LSTM · NSL-KDD</div>
+    </div>
+    """, unsafe_allow_html=True)
     st.divider()
 
     model_choice = st.selectbox(
-        "Active Model",
+        "🧠 Active Model",
         options=["Both (Ensemble)", "Random Forest", "LSTM"],
         index=0
     )
@@ -108,7 +293,15 @@ with st.sidebar:
     active_model = model_map[model_choice]
 
     st.divider()
-    st.caption("Final Year Project")
+    st.markdown("""
+    <div class='fine-card' style='background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.35);
+                border-radius:12px;padding:10px 12px;font-size:12.5px;'>
+        🟢 <b>Models cached</b> &mdash; inference runs in real time once loaded.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.divider()
+    st.caption("🎓 Final Year Project")
     st.caption("Design & Implementation of a NIDS")
 
 predictor = load_predictor(active_model)
@@ -123,12 +316,21 @@ tab_home, tab_live, tab_batch, tab_metrics, tab_about = st.tabs([
 # TAB 1 — HOME
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_home:
-    st.title("🛡️ Network Intrusion Detection System")
-    st.markdown(
-        "An intelligent system that classifies network traffic into **Normal** "
-        "or one of four attack categories using **Random Forest** and **LSTM** "
-        "deep learning models trained on the **NSL-KDD** benchmark dataset."
-    )
+    st.markdown("""
+    <div class='fine-card' style='background:linear-gradient(120deg,#312e81 0%,#4338ca 45%,#6366f1 100%);
+                padding:34px 36px;border-radius:20px;color:#fff;margin-bottom:22px;
+                box-shadow:0 20px 45px -12px rgba(67,56,202,.45);'>
+        <div style='font-size:38px;line-height:1;'>🛡️</div>
+        <div style='font-family:Poppins,sans-serif;font-weight:800;font-size:30px;margin-top:6px;'>
+            Network Intrusion Detection System
+        </div>
+        <div style='font-size:15.5px;color:#e0e7ff;margin-top:8px;max-width:760px;line-height:1.55;'>
+            An intelligent system that classifies network traffic into <b>Normal</b> or one of four
+            attack categories using <b>Random Forest</b> and <b>LSTM</b> deep learning models trained
+            on the <b>NSL-KDD</b> benchmark dataset.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Training Records", "125,973")
@@ -152,29 +354,38 @@ with tab_home:
     for col, cls in zip(cols, CLASS_NAMES):
         with col:
             st.markdown(
-                f"""<div style='background:{CLASS_COLORS[cls]}22;border-left:4px solid
-                {CLASS_COLORS[cls]};padding:12px;border-radius:6px;'>
-                <b>{icons[cls]} {cls}</b><br><small>{descriptions[cls]}</small></div>""",
+                f"""<div class='fine-card' style='background:{CLASS_COLORS[cls]}1a;border:1px solid {CLASS_COLORS[cls]}40;
+                border-left:4px solid {CLASS_COLORS[cls]};padding:14px;border-radius:12px;min-height:118px;'>
+                <div style='font-size:20px;'>{icons[cls]}</div>
+                <b style='font-size:14.5px;'>{cls}</b>
+                <div style='font-size:12px;color:#475569;margin-top:4px;line-height:1.4;'>{descriptions[cls]}</div>
+                </div>""",
                 unsafe_allow_html=True
             )
 
     st.divider()
     st.subheader("📈 NSL-KDD Class Distribution (Train Set)")
 
-    # Approximate distribution from the NSL-KDD dataset
-    dist = {
-        "Normal": 67343, "DoS": 45927, "Probe": 11656, "R2L": 995, "U2R": 52
-    }
-    fig = px.bar(
-        x=list(dist.keys()), y=list(dist.values()),
-        color=list(dist.keys()),
-        color_discrete_map=CLASS_COLORS,
-        labels={"x": "Class", "y": "Sample Count"},
-        title="Training Set Class Distribution",
-        text_auto=True,
-    )
-    fig.update_layout(showlegend=False, height=380)
-    st.plotly_chart(fig, use_container_width=True)
+    with st.container(border=True):
+        # Approximate distribution from the NSL-KDD dataset
+        dist = {
+            "Normal": 67343, "DoS": 45927, "Probe": 11656, "R2L": 995, "U2R": 52
+        }
+        fig = px.bar(
+            x=list(dist.keys()), y=list(dist.values()),
+            color=list(dist.keys()),
+            color_discrete_map=CLASS_COLORS,
+            labels={"x": "Class", "y": "Sample Count"},
+            title="Training Set Class Distribution",
+            text_auto=True,
+        )
+        fig.update_layout(
+            showlegend=False, height=380,
+            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Inter, sans-serif"),
+        )
+        fig.update_traces(marker_line_width=0)
+        st.plotly_chart(fig, use_container_width=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -279,14 +490,21 @@ with tab_live:
                 display_icon  = icon
 
             # ── Main verdict card ─────────────────────────────────────────────
+            is_alarming = (result["is_attack"] or show_warning)
+            pulse_style = "animation:pulseGlow 1.8s infinite;" if is_alarming else ""
             st.markdown(f"""
-            <div style='background:{display_color}22;border:2px solid {display_color};
-            padding:22px;border-radius:10px;text-align:center;margin:15px 0'>
+            <div class='fine-card' style='background:{display_color}1f;border:2px solid {display_color};
+            padding:24px;border-radius:14px;text-align:center;margin:15px 0;{pulse_style}'>
             <h2 style='color:{display_color};margin:0'>{display_icon} {display_cls}</h2>
-            <p style='margin:8px 0;font-size:18px'>
+            <p style='margin:10px 0 6px;font-size:18px'>
                 Ensemble Confidence: <b>{confidence*100:.1f}%</b>
             </p>
-            <p style='margin:0;font-size:14px;color:#555'>
+            <div style='background:{display_color}25;border-radius:8px;height:10px;
+                        max-width:420px;margin:0 auto;overflow:hidden;'>
+                <div style='background:{display_color};height:100%;border-radius:8px;
+                            width:{confidence*100:.1f}%;transition:width 1s ease;'></div>
+            </div>
+            <p style='margin:12px 0 0;font-size:14px;color:#555'>
                 {"⚠️ Models disagree — treat as suspicious." if models_disagree
                  else ("⚠️ Low confidence — result uncertain." if uncertain
                  else ("🚨 Intrusion Detected!" if result["is_attack"]
@@ -312,8 +530,8 @@ with tab_live:
                 if rf_vote:
                     rc = CLASS_COLORS.get(rf_vote, "#888")
                     vc1.markdown(
-                        f"<div style='background:{rc}22;border:2px solid {rc};"
-                        f"padding:12px;border-radius:8px;text-align:center'>"
+                        f"<div class='fine-card' style='background:{rc}1f;border:2px solid {rc};"
+                        f"padding:14px;border-radius:12px;text-align:center'>"
                         f"<b>🌲 Random Forest</b><br>"
                         f"<span style='font-size:20px;color:{rc}'><b>{rf_vote}</b></span>"
                         f"</div>", unsafe_allow_html=True
@@ -321,8 +539,8 @@ with tab_live:
                 if lstm_vote:
                     lc = CLASS_COLORS.get(lstm_vote, "#888")
                     vc2.markdown(
-                        f"<div style='background:{lc}22;border:2px solid {lc};"
-                        f"padding:12px;border-radius:8px;text-align:center'>"
+                        f"<div class='fine-card' style='background:{lc}1f;border:2px solid {lc};"
+                        f"padding:14px;border-radius:12px;text-align:center'>"
                         f"<b>🧠 LSTM</b><br>"
                         f"<span style='font-size:20px;color:{lc}'><b>{lstm_vote}</b></span>"
                         f"</div>", unsafe_allow_html=True
@@ -514,21 +732,26 @@ with tab_batch:
                     st.subheader("📊 Prediction Summary")
                     counts = pd.Series(predictions).value_counts()
                     c1, c2 = st.columns([1, 2])
-                    with c1:
+                    with c1, st.container(border=True):
                         st.dataframe(counts.rename("Count").to_frame(), use_container_width=True)
-                    with c2:
+                    with c2, st.container(border=True):
                         fig = px.pie(
                             values=counts.values, names=counts.index,
                             color=counts.index,
                             color_discrete_map=CLASS_COLORS,
                             title="Predicted Class Distribution",
+                            hole=0.35,
                         )
-                        fig.update_layout(height=300)
+                        fig.update_layout(
+                            height=300,
+                            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                        )
                         st.plotly_chart(fig, use_container_width=True)
 
                     # Full results
                     st.subheader("📋 Detailed Results")
-                    st.dataframe(df_results, use_container_width=True, height=300)
+                    with st.container(border=True):
+                        st.dataframe(df_results, use_container_width=True, height=300)
 
                     # Download
                     csv_bytes = df_results.to_csv(index=False).encode("utf-8")
@@ -556,13 +779,16 @@ with tab_metrics:
         col1, col2 = st.columns(2)
         img = load_plot("rf_confusion_matrix.png")
         if img:
-            col1.image(img, caption="Confusion Matrix", use_container_width=True)
+            with col1, st.container(border=True):
+                st.image(img, caption="Confusion Matrix", use_container_width=True)
         img = load_plot("rf_per_class_metrics.png")
         if img:
-            col2.image(img, caption="Per-Class Metrics", use_container_width=True)
+            with col2, st.container(border=True):
+                st.image(img, caption="Per-Class Metrics", use_container_width=True)
         img = load_plot("rf_feature_importances.png")
         if img:
-            st.image(img, caption="Top Feature Importances", use_container_width=True)
+            with st.container(border=True):
+                st.image(img, caption="Top Feature Importances", use_container_width=True)
         if not os.path.exists(os.path.join(PLOTS_DIR, "rf_confusion_matrix.png")):
             st.info("Plots not found. Run `python main.py` to train models and generate plots.")
 
@@ -571,22 +797,27 @@ with tab_metrics:
         col1, col2 = st.columns(2)
         img = load_plot("lstm_confusion_matrix.png")
         if img:
-            col1.image(img, caption="Confusion Matrix", use_container_width=True)
+            with col1, st.container(border=True):
+                st.image(img, caption="Confusion Matrix", use_container_width=True)
         img = load_plot("lstm_per_class_metrics.png")
         if img:
-            col2.image(img, caption="Per-Class Metrics", use_container_width=True)
+            with col2, st.container(border=True):
+                st.image(img, caption="Per-Class Metrics", use_container_width=True)
         img = load_plot("lstm_training_history.png")
         if img:
-            st.image(img, caption="Training History", use_container_width=True)
+            with st.container(border=True):
+                st.image(img, caption="Training History", use_container_width=True)
 
     with sub3:
         st.subheader("⚖️ Model Comparison")
         img = load_plot("model_comparison.png")
         if img:
-            st.image(img, caption="RF vs LSTM — All Metrics", use_container_width=True)
+            with st.container(border=True):
+                st.image(img, caption="RF vs LSTM — All Metrics", use_container_width=True)
         img = load_plot("comparison_confusion_matrices.png")
         if img:
-            st.image(img, caption="Side-by-Side Confusion Matrices", use_container_width=True)
+            with st.container(border=True):
+                st.image(img, caption="Side-by-Side Confusion Matrices", use_container_width=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
