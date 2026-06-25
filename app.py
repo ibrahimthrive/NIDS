@@ -105,15 +105,18 @@ h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3{
 
 /* ── tabs ─────────────────────────────────────────────────────────────── */
 .stTabs [data-baseweb="tab-list"]{
-    gap:6px;
+    gap:10px;
     background:#f1f5f9;
-    padding:6px;
-    border-radius:12px;
+    padding:8px;
+    border-radius:14px;
+    margin-bottom:6px;
 }
 .stTabs [data-baseweb="tab"]{
-    border-radius:9px !important;
+    border-radius:10px !important;
     font-weight:600;
     color:var(--muted);
+    padding:10px 18px !important;
+    height:auto !important;
     transition:all .2s ease;
 }
 .stTabs [data-baseweb="tab"]:hover{ background:rgba(99,102,241,.08); color:var(--accent); }
@@ -862,10 +865,11 @@ with tab_about:
     1. **Preprocessing** — label mapping, missing value handling, one-hot encoding,
        column alignment, StandardScaler normalisation
     2. **Feature Selection** — Random Forest importance ranking (top 40 features retained)
-    3. **Random Forest** — 200 trees, balanced class weights, `sqrt` feature sampling
-    4. **LSTM** — 2-layer stacked LSTM (128→64 units), BatchNorm, Dropout, input shape
-       `(samples, 1, features)`, trained with EarlyStopping + ReduceLROnPlateau
-    5. **Evaluation** — Accuracy, Precision, Recall, F1-Score (weighted), Confusion Matrix
+    3. **Random Forest** — `RandomizedSearchCV` over n_estimators/max_depth/max_features/
+       class_weight/criterion, optimised for macro-F1, with minority-class oversampling
+    4. **LSTM** — Bidirectional LSTM (256→128→64 units) with LayerNorm and Dropout, Focal
+       Loss + label smoothing, cosine-annealing LR, SMOTE oversampling for R2L/U2R
+    5. **Evaluation** — Accuracy, Precision, Recall, F1-Score (weighted + macro), Confusion Matrix
 
     ---
 
