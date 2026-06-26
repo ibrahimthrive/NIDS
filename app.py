@@ -144,8 +144,16 @@ h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3{
     border-radius:var(--card-radius);
     transition:transform .22s ease, box-shadow .22s ease;
     animation:fadeInUp .5s ease both;
+    margin-bottom:14px;
 }
 .fine-card:hover{ transform:translateY(-4px) scale(1.012); box-shadow:var(--shadow-md); }
+
+/* ── narrow / mobile viewports: columns stack vertically, so give them
+   breathing room (Streamlit's column gap is horizontal-only) ───────────── */
+@media (max-width: 640px){
+    [data-testid="stHorizontalBlock"]{ gap:14px !important; }
+    [data-testid="stHorizontalBlock"] > [data-testid="column"]{ margin-bottom:6px; }
+}
 
 /* ── forms / inputs ───────────────────────────────────────────────────── */
 [data-testid="stForm"]{
